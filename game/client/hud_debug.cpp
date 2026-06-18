@@ -12,6 +12,7 @@
 
 #include "hud_debug.h"
 
+
 using namespace vgui;
 
 extern ConVar cl_debug_hud;
@@ -52,5 +53,7 @@ void CHudDebug::Paint()
 	DrawLine(y, "Velocity Z: %.2f", vel.z);
 	DrawLine(y, "Flags: %d", pPlayer->GetFlags());
 	DrawLine(y, "On Ground: %d", (pPlayer->GetFlags() & FL_ONGROUND) != 0);
+	
+	
 
 }
