@@ -7,10 +7,13 @@
 #include "hud.h"
 #include "hud_macros.h"
 #include "iclientmode.h"
-#include "vgui_controls\Controls.h"
-#include "vgui\ISurface.h"
+#include "vgui_controls/Controls.h"
+#include "vgui/ISurface.h"
+#include <vgui/ILocalize.h>
+#include <vgui/IScheme.h>
 
 #include "hud_debug.h"
+
 
 
 using namespace vgui;
@@ -60,27 +63,36 @@ void CHudDebug::Paint()
 
 void CHudDebug::DrawLine(int &y, const char *fmt, ...)
 {
-	char msg[1024];
+	char msg[1024]; // Safe array buffer allocation
 	va_list argptr;
 	va_start(argptr, fmt);
 	Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
 	va_end(argptr);
 
-	// Ensure we have a valid font set up, default to default vgui font if empty
+	// Correctly pull the Default font from the client scheme engine
 	if (m_hFont == vgui::INVALID_FONT)
 	{
-		m_hFont = vgui::surface()->GetFontByName("DefaultFixedOutline");
+		vgui::HScheme scheme = vgui::scheme()->GetScheme("ClientScheme");
+		vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(scheme);
+		if (pScheme)
+		{
+			m_hFont = pScheme->GetFont("DefaultFixedOutline", true);
+		}
 	}
 
 	vgui::surface()->DrawSetTextFont(m_hFont);
 	vgui::surface()->DrawSetTextColor(255, 255, 255, 255); // White text
 	vgui::surface()->DrawSetTextPos(20, y);
 
-	// Convert char to wchar_t for Source Engine surface drawing
+	// Convert text to wide string for the Source surface printer
 	wchar_t wmsg[1024];
-	g_pVGuiLocalize->ConvertANSIToUnicode(msg, wmsg, sizeof(wmsg));
-	vgui::surface()->DrawPrintText(wmsg, wcslen(wmsg));
+	if (g_pVGuiLocalize)
+	{
+		g_pVGuiLocalize->ConvertANSIToUnicode(msg, wmsg, sizeof(wmsg));
+		vgui::surface()->DrawPrintText(wmsg, wcslen(wmsg));
+	}
 
-	// Automatically step the vertical spacing down for the next line
+	// Advance vertical line tracking
 	y += vgui::surface()->GetFontTall(m_hFont) + 2;
 }
+
