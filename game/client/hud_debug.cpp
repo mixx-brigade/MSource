@@ -30,6 +30,12 @@ CHudDebug::CHudDebug(const char *pElementName) : CHudElement(pElementName), Base
 void CHudDebug::Init()
 {
 	SetVisible(true);
+
+	// Dynamically size the panel to fill the entire screen viewport
+	int wide, tall;
+	vgui::surface()->GetScreenSize(wide, tall);
+	SetBounds(0, 0, wide, tall);
+
 }
 
 void CHudDebug::VidInit()
@@ -48,6 +54,7 @@ void CHudDebug::Paint()
 
 	int y = 20;
 
+	// --- Player Physics Telemetry ---
 	Vector vel = pPlayer->GetAbsVelocity();
 	float speed2D = vel.Length2D();
 
@@ -56,10 +63,39 @@ void CHudDebug::Paint()
 	DrawLine(y, "Velocity Z: %.2f", vel.z);
 	DrawLine(y, "Flags: %d", pPlayer->GetFlags());
 	DrawLine(y, "On Ground: %d", (pPlayer->GetFlags() & FL_ONGROUND) != 0);
-	
-	
 
+	// --- Weapon Telemetry ---
+	DrawLine(y, " "); // Spacer line
+	DrawLine(y, "=== Weapon Telemetry ===");
+
+	C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
+	if (pWeapon)
+	{
+		// 1. Get Weapon Class Name (e.g., weapon_smg1)
+		DrawLine(y, "Class: %s", pWeapon->GetClassname());
+
+		// 2. Get Primary Clip (-1 means the weapon doesn't use clips, like grenades)
+		int iClip1 = pWeapon->UsesClipsForAmmo1() ? pWeapon->Clip1() : -1;
+		if (iClip1 >= 0)
+		{
+			DrawLine(y, "Clip 1: %d", iClip1);
+		}
+		else
+		{
+			DrawLine(y, "Clip 1: N/A");
+		}
+
+		// 3. Get Reserve Ammo Total
+		int iAmmoType = pWeapon->GetPrimaryAmmoType();
+		int iReserve = pPlayer->GetAmmoCount(iAmmoType);
+		DrawLine(y, "Reserve Ammo: %d", iReserve);
+	}
+	else
+	{
+		DrawLine(y, "Active Weapon: None");
+	}
 }
+
 
 void CHudDebug::DrawLine(int &y, const char *fmt, ...)
 {
@@ -95,4 +131,5 @@ void CHudDebug::DrawLine(int &y, const char *fmt, ...)
 	// Advance vertical line tracking
 	y += vgui::surface()->GetFontTall(m_hFont) + 2;
 }
+
 
