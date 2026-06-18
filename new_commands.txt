@@ -1,0 +1,5 @@
+### This contains a list of all new commands added in ReSource 1
+
+### DEBUG COMMANDS ###
+
+"cl_debug_hud <1|0>" - Open the Debug HUD.
