@@ -1,0 +1,17 @@
+"Rocks 01"
+{
+	base
+	{
+		"classname" "prop_static"
+		"solid" "6"
+		"fademindist" "1500"
+		"fademaxdist" "2000"
+		"grid" "96 96"
+ 	}
+	"10"
+	{
+	 "model" "models/cliffs/rocks_medium01.mdl"
+	 "angles" "0 random 0"
+	 "uniformscale" "random 0.8 1.25"
+	}
+}
