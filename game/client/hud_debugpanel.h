@@ -20,6 +20,11 @@ public:
 	virtual void VidInit();
 	virtual void OnThink();
 
+	// Added: Required override declaration to block frame assets
+	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
+
+	void ToggleVisibility(bool bShow);
+
 private:
 	vgui::Label *m_pSpeedLabel;
 	vgui::Label *m_pFPSLabel;
