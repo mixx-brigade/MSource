@@ -1,3 +1,8 @@
+// (C) Valve Software, meowcat767 & MIXX Brigade 2026
+// --------------------------------------------------
+// Purpose: debugging panel
+// --------------------------------------------------
+
 #include "cbase.h"
 #include "hud_debugpanel.h"
 
@@ -7,25 +12,24 @@
 
 using namespace vgui;
 
-DECLARE_HUDELEMENT(CHudDebugPanel);
+DECLARE_HUDELEMENT(CHuDebugPanel);
 
 ConVar cl_debug_panel("cl_debug_panel", "0");
 
-CHudDebugPanel::CHudDebugPanel(const char *name)
-	: CHudElement(name), BaseClass(NULL, "HudDebugPanel")
+CHuDebugPanel::CHuDebugPanel(const char *name) : CHudElement(name), BaseClass(NULL, "HudDebugPanel")
 {
 	SetParent(g_pClientMode->GetViewport());
 }
 
-void CHudDebugPanel::Init()
+void CHuDebugPanel::Init()
 {
 }
 
-void CHudDebugPanel::VidInit()
+void CHuDebugPanel::VidInit()
 {
 }
 
-void CHudDebugPanel::Paint()
+void CHuDebugPanel::Paint()
 {
 	if (!cl_debug_panel.GetBool())
 		return;
@@ -33,17 +37,7 @@ void CHudDebugPanel::Paint()
 	C_BasePlayer *player = C_BasePlayer::GetLocalPlayer();
 
 	if (!player)
-		return;
+		return
 
-	Vector vel = player->GetAbsVelocity();
-	float speed = vel.Length2D();
 
-	int y = 100;
-
-	wchar_t text[128];
-
-	swprintf(text, 128, L"Speed: %.0f", speed);
-
-	surface()->DrawSetTextPos(50, y);
-	surface()->DrawPrintText(text, wcslen(text));
 }

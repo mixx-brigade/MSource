@@ -1886,6 +1886,9 @@
     <ClInclude Include="debug_trace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="hud_debugpanel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mp3player.cpp">
@@ -3380,6 +3383,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="debug_trace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hud_debugpanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
