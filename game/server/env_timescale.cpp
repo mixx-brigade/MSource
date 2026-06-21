@@ -1,25 +1,45 @@
-#ifndef ENV_TIMESCALE_H
-#define ENV_TIMESCALE_H
-
-#ifdef _WIN32
-#pragma once
-#endif
-
 #include "cbase.h"
+#include "env_timescale.h";
 
-class CEnvTimescale : public CPointEntity
+LINK_ENTITY_TO_CLASS(env_timescale, CEnvTimescale);
+
+extern ConVar host_timescale;
+
+BEGIN_DATADESC(CEnvTimescale)
+DEFINE_KEYFIELD(m_flScale, FIELD_FLOAT, "scale"),
+DEFINE_INPUTFUNC(FIELD_FLOAT, "SetScale", InputSetScale),
+DEFINE_INPUTFUNC(FIELD_VOID, "Reset", InputReset),
+
+END_DATADESC()
+
+void CEnvTimescale::Spawn()
 {
-public:
-	DECLARE_CLASS(CEnvTimescale, CPointEntity);
-	DECLARE_DATADESC();
+	BaseClass::Spawn();
 
-	void Spawn() OVERRIDE;
+	SetSolid(SOLID_NONE);
+	AddEffects(EF_NODRAW);
 
-	void InputSetScale(inputdata_t &inputdata);
-	void InputReset(inputdata_t &inputdata);
+}
 
-private:
-	float m_flScale;
-};
+void CEnvTimescale::InputSetScale(inputdata_t &inputdata)
+{
+	float scale = inputdata.value.Float();
 
-#endif
+	if (scale <= 0.0f)
+		scale = m_flScale;
+
+	if (scale <= 0.0f)
+		scale = 1.0f;
+
+	host_timescale.SetValue(scale);
+
+	Msg("[env_timescale] host_timescale = %.2f\n", scale);
+
+}
+
+void CEnvTimescale::InputReset(inputdata_t &inputdata)
+{
+	host_timescale.SetValue(1.0f);
+
+	Msg("[env_timescale] Reset Timescale.\n")
+}
