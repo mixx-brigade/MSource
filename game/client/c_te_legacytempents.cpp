@@ -1790,7 +1790,8 @@ void CTempEnts::MuzzleFlash( int type, ClientEntityHandle_t hEntity, int attachm
 	default:
 		{
 			//NOTENOTE: This means you specified an invalid muzzleflash type, check your spelling?
-			Assert( 0 );
+			Warning("Hit default for MUZZLEFLASH_RPG, not throwing Assert.");
+			break;
 		}
 		break;
 	}
