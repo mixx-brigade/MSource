@@ -1,183 +1,72 @@
-// STATIC: "CONVERT_TO_SRGB"   "0..0" [= 0]
 #define HDRTYPE HDR_TYPE_NONE
 #include "common_ps_fxc.h"
 
-// FXAA 3.11 Quality - ps_2_b compatible version
-// No early returns, no dynamic loops, manually unrolled 8-step edge search.
-// c0: [ 1/width, 1/height, 0, 0 ]
-
 sampler FBSampler : register( s0 );
+
+// Pixel shader constant register c0.
+// c0 contains [ 1/width, 1/height, 0, 0 ]
 const float4 g_FXAAParams : register( c0 );
 
 struct PS_INPUT
 {
-    float2 texCoord : TEXCOORD0;
+	float2 texCoord : TEXCOORD0;
 };
-
-#define FXAA_QUALITY_SUBPIX              0.75f
-#define FXAA_QUALITY_EDGE_THRESHOLD      0.166f
-#define FXAA_QUALITY_EDGE_THRESHOLD_MIN  0.0833f
-
-float FxaaLuma( float3 rgb )
-{
-    // Green-weighted luma (fast, no sqrt)
-    return rgb.y * (0.587f / 0.299f) + rgb.x;
-}
 
 float4 main( PS_INPUT i ) : COLOR
 {
-    float2 pos      = i.texCoord;
-    float2 rcpFrame = g_FXAAParams.xy;
+	float2 rcpFrame = g_FXAAParams.xy;
+	float2 uv = i.texCoord;
 
-    // ---- Cardinal neighbours ----
-    float3 rgbN = tex2D( FBSampler, pos + float2(  0,-1) * rcpFrame ).xyz;
-    float3 rgbW = tex2D( FBSampler, pos + float2( -1, 0) * rcpFrame ).xyz;
-    float3 rgbM = tex2D( FBSampler, pos ).xyz;
-    float3 rgbE = tex2D( FBSampler, pos + float2(  1, 0) * rcpFrame ).xyz;
-    float3 rgbS = tex2D( FBSampler, pos + float2(  0, 1) * rcpFrame ).xyz;
+	float FXAA_SPAN_MAX = 8.0;
+	float FXAA_REDUCE_MUL = 1.0/8.0;
+	float FXAA_REDUCE_MIN = 1.0/128.0;
 
-    float lumaN = FxaaLuma( rgbN );
-    float lumaW = FxaaLuma( rgbW );
-    float lumaM = FxaaLuma( rgbM );
-    float lumaE = FxaaLuma( rgbE );
-    float lumaS = FxaaLuma( rgbS );
+	float3 rgbNW = tex2D( FBSampler, uv + (float2(-1.0, -1.0) * rcpFrame) ).xyz;
+	float3 rgbNE = tex2D( FBSampler, uv + (float2(1.0, -1.0) * rcpFrame) ).xyz;
+	float3 rgbSW = tex2D( FBSampler, uv + (float2(-1.0, 1.0) * rcpFrame) ).xyz;
+	float3 rgbSE = tex2D( FBSampler, uv + (float2(1.0, 1.0) * rcpFrame) ).xyz;
+	float3 rgbM  = tex2D( FBSampler, uv ).xyz;
 
-    float rangeMin = min( lumaM, min( min(lumaN, lumaW), min(lumaS, lumaE) ) );
-    float rangeMax = max( lumaM, max( max(lumaN, lumaW), max(lumaS, lumaE) ) );
-    float range    = rangeMax - rangeMin;
+	float3 luma = float3(0.299, 0.587, 0.114);
+	float lumaNW = dot(rgbNW, luma);
+	float lumaNE = dot(rgbNE, luma);
+	float lumaSW = dot(rgbSW, luma);
+	float lumaSE = dot(rgbSE, luma);
+	float lumaM  = dot(rgbM,  luma);
 
-    // Threshold check — pass-through factor (1 if below threshold, keep original)
-    float belowThreshold = ( range < max( FXAA_QUALITY_EDGE_THRESHOLD_MIN, rangeMax * FXAA_QUALITY_EDGE_THRESHOLD ) ) ? 1.0f : 0.0f;
+	float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+	float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
 
-    // ---- Diagonal neighbours ----
-    float3 rgbNW = tex2D( FBSampler, pos + float2(-1,-1) * rcpFrame ).xyz;
-    float3 rgbNE = tex2D( FBSampler, pos + float2( 1,-1) * rcpFrame ).xyz;
-    float3 rgbSW = tex2D( FBSampler, pos + float2(-1, 1) * rcpFrame ).xyz;
-    float3 rgbSE = tex2D( FBSampler, pos + float2( 1, 1) * rcpFrame ).xyz;
+	float2 dir;
+	dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
+	dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));
 
-    float lumaNW = FxaaLuma( rgbNW );
-    float lumaNE = FxaaLuma( rgbNE );
-    float lumaSW = FxaaLuma( rgbSW );
-    float lumaSE = FxaaLuma( rgbSE );
+	float dirReduce = max(
+		(lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * FXAA_REDUCE_MUL),
+		FXAA_REDUCE_MIN
+	);
 
-    // ---- Sub-pixel blending (smoothstep) ----
-    float subpixNSWE     = lumaN + lumaS + lumaW + lumaE;
-    float subpixNWSWNESE = lumaNW + lumaSW + lumaNE + lumaSE;
-    float subpixA        = ( 2.0f * subpixNSWE + subpixNWSWNESE ) * (1.0f/12.0f);
-    float subpixB        = abs( subpixA - lumaM );
-    float subpixC        = saturate( subpixB / range );
-    float subpixD        = (-2.0f * subpixC + 3.0f) * subpixC * subpixC;
-    float subpixH        = subpixD * subpixD * FXAA_QUALITY_SUBPIX;
+	float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
 
-    // ---- Edge direction ----
-    float edgeVert  = abs( lumaNW + lumaN + lumaNE - lumaSW - lumaS - lumaSE );
-    float edgeHorz  = abs( lumaNW + lumaW + lumaSW - lumaNE - lumaE - lumaSE );
-    float isHorz    = ( edgeHorz >= edgeVert ) ? 1.0f : 0.0f;
+	dir = min(float2(FXAA_SPAN_MAX, FXAA_SPAN_MAX),
+		  max(float2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),
+		  dir * rcpDirMin)) * rcpFrame;
 
-    float lengthSign    = lerp( rcpFrame.x, rcpFrame.y, isHorz );
-    float lumaPairA     = lerp( lumaW, lumaN, isHorz );
-    float lumaPairB     = lerp( lumaE, lumaS, isHorz );
-    float lumaPos       = ( lumaPairA + lumaPairB ) * 0.5f;
+	float3 rgbA = 0.5 * (
+		tex2D( FBSampler, uv + dir * (1.0/3.0 - 0.5) ).xyz +
+		tex2D( FBSampler, uv + dir * (2.0/3.0 - 0.5) ).xyz);
+	float3 rgbB = rgbA * 0.5 + 0.25 * (
+		tex2D( FBSampler, uv + dir * (0.0/3.0 - 0.5) ).xyz +
+		tex2D( FBSampler, uv + dir * (3.0/3.0 - 0.5) ).xyz);
 
-    float gradientPos = abs( lumaPairA - lumaM );
-    float gradientNeg = abs( lumaPairB - lumaM );
-    float signFlip    = ( gradientNeg >= gradientPos ) ? -1.0f : 1.0f;
-    lengthSign       *= signFlip;
+	float lumaB = dot(rgbB, luma);
 
-    float2 posEdge  = pos;
-    posEdge.y      += isHorz * lengthSign * 0.5f;
-    posEdge.x      += (1.0f - isHorz) * lengthSign * 0.5f;
+	float4 finalColor;
+	if ((lumaB < lumaMin) || (lumaB > lumaMax)) {
+		finalColor = float4(rgbA, 1.0f);
+	} else {
+		finalColor = float4(rgbB, 1.0f);
+	}
 
-    float2 stepHorz = float2( rcpFrame.x, 0 );
-    float2 stepVert = float2( 0, rcpFrame.y );
-    float2 step     = lerp( stepVert, stepHorz, isHorz );
-
-    float lumaEdge  = ( lumaPos + lumaM ) * 0.5f;
-    float gradient  = max( gradientPos, gradientNeg ) * 0.25f;
-
-    // ---- Manually unrolled 8-step edge search ----
-    float2 posN = posEdge - step;
-    float2 posP = posEdge + step;
-
-    float lumaEndN, lumaEndP;
-    float doneN, doneP;
-
-    lumaEndN = FxaaLuma( tex2D( FBSampler, posN ).xyz ) - lumaEdge;
-    lumaEndP = FxaaLuma( tex2D( FBSampler, posP ).xyz ) - lumaEdge;
-    doneN = ( abs(lumaEndN) >= gradient ) ? 1.0f : 0.0f;
-    doneP = ( abs(lumaEndP) >= gradient ) ? 1.0f : 0.0f;
-
-    posN -= step * (1.0f - doneN);
-    posP += step * (1.0f - doneP);
-    lumaEndN = lerp( FxaaLuma( tex2D( FBSampler, posN ).xyz ) - lumaEdge, lumaEndN, doneN );
-    lumaEndP = lerp( FxaaLuma( tex2D( FBSampler, posP ).xyz ) - lumaEdge, lumaEndP, doneP );
-    doneN = ( abs(lumaEndN) >= gradient ) ? 1.0f : 0.0f;
-    doneP = ( abs(lumaEndP) >= gradient ) ? 1.0f : 0.0f;
-
-    posN -= step * (1.0f - doneN);
-    posP += step * (1.0f - doneP);
-    lumaEndN = lerp( FxaaLuma( tex2D( FBSampler, posN ).xyz ) - lumaEdge, lumaEndN, doneN );
-    lumaEndP = lerp( FxaaLuma( tex2D( FBSampler, posP ).xyz ) - lumaEdge, lumaEndP, doneP );
-    doneN = ( abs(lumaEndN) >= gradient ) ? 1.0f : 0.0f;
-    doneP = ( abs(lumaEndP) >= gradient ) ? 1.0f : 0.0f;
-
-    posN -= step * (1.0f - doneN);
-    posP += step * (1.0f - doneP);
-    lumaEndN = lerp( FxaaLuma( tex2D( FBSampler, posN ).xyz ) - lumaEdge, lumaEndN, doneN );
-    lumaEndP = lerp( FxaaLuma( tex2D( FBSampler, posP ).xyz ) - lumaEdge, lumaEndP, doneP );
-    doneN = ( abs(lumaEndN) >= gradient ) ? 1.0f : 0.0f;
-    doneP = ( abs(lumaEndP) >= gradient ) ? 1.0f : 0.0f;
-
-    posN -= step * (1.0f - doneN);
-    posP += step * (1.0f - doneP);
-    lumaEndN = lerp( FxaaLuma( tex2D( FBSampler, posN ).xyz ) - lumaEdge, lumaEndN, doneN );
-    lumaEndP = lerp( FxaaLuma( tex2D( FBSampler, posP ).xyz ) - lumaEdge, lumaEndP, doneP );
-    doneN = ( abs(lumaEndN) >= gradient ) ? 1.0f : 0.0f;
-    doneP = ( abs(lumaEndP) >= gradient ) ? 1.0f : 0.0f;
-
-    posN -= step * (1.0f - doneN);
-    posP += step * (1.0f - doneP);
-    lumaEndN = lerp( FxaaLuma( tex2D( FBSampler, posN ).xyz ) - lumaEdge, lumaEndN, doneN );
-    lumaEndP = lerp( FxaaLuma( tex2D( FBSampler, posP ).xyz ) - lumaEdge, lumaEndP, doneP );
-    doneN = ( abs(lumaEndN) >= gradient ) ? 1.0f : 0.0f;
-    doneP = ( abs(lumaEndP) >= gradient ) ? 1.0f : 0.0f;
-
-    posN -= step * (1.0f - doneN);
-    posP += step * (1.0f - doneP);
-    lumaEndN = lerp( FxaaLuma( tex2D( FBSampler, posN ).xyz ) - lumaEdge, lumaEndN, doneN );
-    lumaEndP = lerp( FxaaLuma( tex2D( FBSampler, posP ).xyz ) - lumaEdge, lumaEndP, doneP );
-    doneN = ( abs(lumaEndN) >= gradient ) ? 1.0f : 0.0f;
-    doneP = ( abs(lumaEndP) >= gradient ) ? 1.0f : 0.0f;
-
-    // Final step (always sample regardless of done flags)
-    posN -= step * (1.0f - doneN);
-    posP += step * (1.0f - doneP);
-    lumaEndN = lerp( FxaaLuma( tex2D( FBSampler, posN ).xyz ) - lumaEdge, lumaEndN, doneN );
-    lumaEndP = lerp( FxaaLuma( tex2D( FBSampler, posP ).xyz ) - lumaEdge, lumaEndP, doneP );
-
-    // ---- Compute blend factor ----
-    float dstN = lerp( abs(pos.x - posN.x), abs(pos.y - posN.y), isHorz );
-    float dstP = lerp( abs(posP.x - pos.x), abs(posP.y - pos.y), isHorz );
-
-    float goodSpanN = ( (lumaEndN < 0.0f) != (lumaM < lumaEdge) ) ? 1.0f : 0.0f;
-    float goodSpanP = ( (lumaEndP < 0.0f) != (lumaM < lumaEdge) ) ? 1.0f : 0.0f;
-
-    float spanLengthInv = 1.0f / (dstN + dstP);
-    float useN  = ( dstN < dstP ) ? 1.0f : 0.0f;
-    float pixOff = ( useN * (-dstN * spanLengthInv + 0.5f) ) + ( (1.0f - useN) * (-dstP * spanLengthInv + 0.5f) );
-    float good   = lerp( goodSpanP, goodSpanN, useN );
-    float pixelOffset = pixOff * good;
-
-    float pixelOffsetH = max( pixelOffset, subpixH );
-
-    float2 finalPos = pos;
-    finalPos.y += isHorz        * pixelOffsetH * lengthSign;
-    finalPos.x += (1.0f - isHorz) * pixelOffsetH * lengthSign;
-
-    float4 fxaaResult  = tex2D( FBSampler, finalPos );
-    float4 origResult  = float4( rgbM, 1.0f );
-
-    // If below contrast threshold, return original; otherwise FXAA result
-    float4 finalColor = lerp( fxaaResult, origResult, belowThreshold );
-    return FinalOutput( finalColor, 0, PIXEL_FOG_TYPE_NONE, TONEMAP_SCALE_NONE );
+	return FinalOutput( finalColor, 0, PIXEL_FOG_TYPE_NONE, TONEMAP_SCALE_NONE );
 }

@@ -37,7 +37,7 @@ float g_flCustomBloomScaleMinimum = 0.0f;
 bool g_bFlashlightIsOn = false;
 
 // hdr parameters
-ConVar mat_bloomscale( "mat_bloomscale", "1.5" );
+ConVar mat_bloomscale( "mat_bloomscale", "1" );
 ConVar mat_hdr_level( "mat_hdr_level", "2", FCVAR_ARCHIVE );
 
 ConVar mat_bloomamount_rate( "mat_bloomamount_rate", "0.05f", FCVAR_CHEAT );
@@ -56,7 +56,7 @@ ConVar mat_hdr_uncapexposure( "mat_hdr_uncapexposure", "0", FCVAR_CHEAT );
 ConVar mat_force_bloom("mat_force_bloom","0", FCVAR_CHEAT);
 ConVar mat_disable_bloom("mat_disable_bloom","0");
 ConVar mat_debug_bloom("mat_debug_bloom","0", FCVAR_CHEAT);
-ConVar mat_colorcorrection( "mat_colorcorrection", "1" );
+ConVar mat_colorcorrection( "mat_colorcorrection", "0" );
 
 ConVar mat_accelerate_adjust_exposure_down( "mat_accelerate_adjust_exposure_down", "3.0", FCVAR_CHEAT );
 ConVar mat_hdr_manual_tonemap_rate( "mat_hdr_manual_tonemap_rate", "1.0" );
@@ -64,7 +64,7 @@ ConVar mat_hdr_manual_tonemap_rate( "mat_hdr_manual_tonemap_rate", "1.0" );
 // fudge factor to make non-hdr bloom more closely match hdr bloom. Because of auto-exposure, high
 // bloomscales don't blow out as much in hdr. this factor was derived by comparing images in a
 // reference scene.
-ConVar mat_non_hdr_bloom_scalefactor("mat_non_hdr_bloom_scalefactor",".5");
+ConVar mat_non_hdr_bloom_scalefactor("mat_non_hdr_bloom_scalefactor",".3");
 
 // Apply addition scale to the final bloom scale
 static ConVar mat_bloom_scalefactor_scalar( "mat_bloom_scalefactor_scalar", "1.0" );
