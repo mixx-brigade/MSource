@@ -6,6 +6,8 @@
 
 ConVar mat_fxaa("mat_fxaa", "1", FCVAR_ARCHIVE, "Enable/disable FXAA post-processing effect");
 
+IMaterial* g_pFXAAMaterial = nullptr;
+
 CFXAAEffect::CFXAAEffect()	
 {
 	m_bEnabled = true;
@@ -13,6 +15,7 @@ CFXAAEffect::CFXAAEffect()
 
 void CFXAAEffect::Init(void)
 {
+	g_pFXAAMaterial = materials->FindMaterial("effects/fxaa", TEXTURE_GROUP_OTHER, true);
 }
 
 void CFXAAEffect::Shutdown(void)
@@ -35,10 +38,20 @@ bool CFXAAEffect::IsEnabled(void)
 
 void CFXAAEffect::Render(int x, int y, int w, int h)
 {
-	if (!IsEnabled())
+	if (!IsEnabled() || !g_pFXAAMaterial)
 		return;
 
-	Msg("FXAA Render"); // just a test for now
+	IMatRenderContext* pRenderContext = materials->GetRenderContext();
+
+	pRenderContext->PushRenderTargetAndViewport();
+
+	pRenderContext->Bind(g_pFXAAMaterial);
+
+	// Fullscreen quad
+	CMatRenderContextPtr pRC(materials);
+	pRC->DrawScreenSpaceQuad(g_pFXAAMaterial);
+
+	pRenderContext->PopRenderTargetAndViewport();
 }
 
 // Register it
