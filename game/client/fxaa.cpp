@@ -8,7 +8,15 @@
 
 ConVar mat_fxaa("mat_fxaa", "1", FCVAR_ARCHIVE, "Enable FXAA post-processing");
 
-static IMaterial* g_pFXAAMaterial = nullptr;
+IMaterial* g_pFXAAMaterial = nullptr;
+IMaterialVar* g_pFXAAC0X = nullptr;
+IMaterialVar* g_pFXAAC0Y = nullptr;
+IMaterialVar* g_pFXAAC0X = nullptr;
+IMaterialVar* g_pFXAAC0Y = nullptr;
+IMaterialVar* g_pFXAAC0X = nullptr;
+IMaterialVar* g_pFXAAC0Y = nullptr;
+IMaterialVar* g_pFXAAC0X = nullptr;
+IMaterialVar* g_pFXAAC0Y = nullptr;
 
 CFXAAEffect::CFXAAEffect()
 {
@@ -17,17 +25,12 @@ CFXAAEffect::CFXAAEffect()
 
 void CFXAAEffect::Init()
 {
-	// TEMP: just display the resolved frame buffer
-	// This is NOT real FXAA yet, just a pipeline test
-	g_pFXAAMaterial = materials->FindMaterial(
-		"debug/post_effect",
-		TEXTURE_GROUP_OTHER,
-		true
-	);
-
-	if (IsErrorMaterial(g_pFXAAMaterial))
+	g_pFXAAMaterial = materials->FindMaterial("effects/fxaa", TEXTURE_GROUP_OTHER, true);
+	if (g_pFXAAMaterial)
 	{
-		g_pFXAAMaterial = nullptr;
+		bool bFoundVar = false;
+		g_pFXAAC0X = g_pFXAAMaterial->FindVar("$c0_x", &bFoundVar, false);
+		g_pFXAAC0Y = g_pFXAAMaterial->FindVar("$c0_y", &bFoundVar, false);
 	}
 }
 
@@ -55,9 +58,14 @@ void CFXAAEffect::Render(int x, int y, int w, int h)
 	if (!IsEnabled())
 		return;
 
-	IMatRenderContext* pRC = materials->GetRenderContext();
-	if (!pRC)
-		return;
+	if (g_pFXAAC0X)
+		g_pFXAAC0X->SetFloatValue(1.0f / w);
+	if (g_pFXAAC0Y)
+		g_pFXAAC0Y->SetFloatValue(1.0f / h);
+
+	IMatRenderContext* pRenderContext = materials->GetRenderContext();
+
+	pRenderContext->PushRenderTargetAndViewport();
 
 	pRC->PushRenderTargetAndViewport();
 
