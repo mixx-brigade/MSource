@@ -1567,6 +1567,7 @@ void CHLClient::View_Fade( ScreenFade_t *pSF )
 //-----------------------------------------------------------------------------
 void CHLClient::LevelInitPreEntity( char const* pMapName )
 {
+<<<<<<< HEAD
 	// Post that we are ReSource
 	Msg("\n");
 	Msg("============================================================\n");
@@ -1578,6 +1579,8 @@ void CHLClient::LevelInitPreEntity( char const* pMapName )
 	Msg("\n");
 
 
+=======
+>>>>>>> aa7e8f9 (base)
 	// HACK: Bogus, but the logic is too complicated in the engine
 	if (g_bLevelInitialized)
 		return;
@@ -1589,8 +1592,12 @@ void CHLClient::LevelInitPreEntity( char const* pMapName )
 	
 	//Tony; loadup per-map manifests.
 	ParseParticleEffectsMap( pMapName, true );
+<<<<<<< HEAD
 
 
+=======
+	
+>>>>>>> aa7e8f9 (base)
 	// Tell mode manager that map is changing
 	modemanager->LevelInit( pMapName );
 	ParticleMgr()->LevelInit();

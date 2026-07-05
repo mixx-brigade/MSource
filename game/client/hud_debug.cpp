@@ -7,10 +7,6 @@
 #include "hud.h"
 #include "hud_macros.h"
 #include "iclientmode.h"
-#include "vgui_controls/Controls.h"
-#include "vgui/ISurface.h"
-#include <vgui/ILocalize.h>
-#include <vgui/IScheme.h>
 
 #include "hud_debug.h"
 
@@ -79,7 +75,7 @@ void CHudDebug::Paint()
 		if (iClip1 >= 0)
 		{
 			DrawLine(y, "Clip 1: %d", iClip1);
-		}
+}
 		else
 		{
 			DrawLine(y, "Clip 1: N/A");
