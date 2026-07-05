@@ -24,18 +24,15 @@
 #include "memdbgoff.h"
 
 #ifdef _WIN32
-// ARG: crtdbg is necessary for certain definitions below,
-// but it also redefines malloc as a macro in release.
-// To disable this, we gotta define _DEBUG before including it.. BLEAH!
-#define _DEBUG 1
+#if defined(_MSC_VER) && !defined(_X360)
+// crtdbg.h is used for debug memory functions. Include it only when building
+// with _DEBUG so we don't force debug-specific CRT definitions into release
+// builds which can cause redefinition conflicts.
+#if defined(_DEBUG)
 #include "crtdbg.h"
-#ifdef NDEBUG
-#undef _DEBUG
 #endif
-
-// Turn this back off in release mode.
-#ifdef NDEBUG
-#undef _DEBUG
+#elif POSIX
+#define __cdecl
 #endif
 #elif POSIX
 #define __cdecl
