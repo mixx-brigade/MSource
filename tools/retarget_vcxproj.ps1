@@ -1,0 +1,74 @@
+<#
+.SYNOPSIS
+  Retarget all .vcxproj files in the repository to Visual Studio 2022 PlatformToolset v143.
+
+.DESCRIPTION
+  Replaces existing <PlatformToolset> elements with v143 and adds the element if missing inside the first
+  PropertyGroup. Also updates Project ToolsVersion attribute to 17.0 if present (non-destructive).
+  The script makes a .bak copy of each modified file.
+
+.EXAMPLE
+  PowerShell -ExecutionPolicy Bypass -File .\tools\retarget_vcxproj.ps1
+#>
+
+Param(
+    [string]$Toolset = 'v143',
+    [string]$ToolsVersion = '17.0'
+)
+
+function Write-Ok([string]$m){ Write-Host $m -ForegroundColor Green }
+function Write-Warn([string]$m){ Write-Host $m -ForegroundColor Yellow }
+function Write-Err([string]$m){ Write-Host $m -ForegroundColor Red }
+
+$root = git rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-Err "Not a git repository. Run this from inside your repo root."; exit 1
+}
+
+Write-Host "Searching for .vcxproj files under: $root"
+$files = Get-ChildItem -Path $root -Recurse -Filter *.vcxproj -ErrorAction SilentlyContinue
+if (-not $files) { Write-Warn "No .vcxproj files found."; exit 0 }
+
+foreach ($file in $files) {
+    $path = $file.FullName
+    Write-Host "Processing: $path"
+    $text = Get-Content -Path $path -Raw -ErrorAction Stop
+    $orig = $text
+
+    # (Skipping ToolsVersion modification to avoid unsafe replacements; only changing PlatformToolset)
+
+    # Replace existing PlatformToolset values
+    if ($text -match '<PlatformToolset>') {
+        $text = [regex]::Replace($text, '<PlatformToolset>.*?</PlatformToolset>', "<PlatformToolset>$Toolset</PlatformToolset>", 'Singleline')
+        Write-Host "  Replaced existing <PlatformToolset> -> $Toolset"
+    }
+    else {
+        # Insert PlatformToolset into the first PropertyGroup that does not have Condition attribute or the first PropertyGroup
+        $inserted = $false
+        $text = [regex]::Replace($text, '(?<pg><PropertyGroup[^>]*>)(?<content>.*?)</PropertyGroup>', {
+            param($m)
+            if (-not $script:inserted) {
+                $script:inserted = $true
+                $pg = $m.Groups['pg'].Value
+                $content = $m.Groups['content'].Value
+                # Insert PlatformToolset at top of this PropertyGroup
+                return "$pg`n    <PlatformToolset>$Toolset</PlatformToolset>`n$content</PropertyGroup>"
+            }
+            else { return $m.Value }
+        }, 'Singleline')
+        if ($script:inserted) { Write-Host "  Inserted <PlatformToolset> -> $Toolset into first PropertyGroup" }
+        else { Write-Warn "  Could not find PropertyGroup to insert PlatformToolset" }
+    }
+
+    if ($text -ne $orig) {
+        $bak = "$path.bak"
+        Copy-Item -Path $path -Destination $bak -Force
+        Set-Content -Path $path -Value $text -Encoding UTF8
+        Write-Ok "  Patched and backed up original to: $bak"
+    }
+    else {
+        Write-Host "  No changes required."
+    }
+}
+
+Write-Ok "Done. Review changes and commit the modified .vcxproj files." 

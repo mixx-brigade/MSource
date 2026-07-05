@@ -62,9 +62,12 @@ config.cfg
 *.opendb
 *.ipch
 
+<<<<<<< HEAD
 game/server/Release_mod_episodic/vc120.pdb
 game/client/Release_mod_hl2/vc120.pdb
 game/server/Release_mod_hl2/vc120.pdb
 game/client/Release_mod_episodic/vc120.pdb
 /.vs/everything
 /game/client/Release_mod_hl2/vc120.pdb
+=======
+>>>>>>> aa7e8f9 (base)

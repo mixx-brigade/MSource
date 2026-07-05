@@ -445,7 +445,10 @@ public:
 
 	// Sliding
 	bool IsSliding() const { return m_bIsSliding;  }
+<<<<<<< HEAD
 	bool m_bIsSliding;
+=======
+>>>>>>> aa7e8f9 (base)
 
 	void StartSlide();
 	void EndSlide();
