@@ -207,13 +207,11 @@ void TextImage::SetText(const wchar_t *unicode, bool bClearUnlocalizedSymbol)
 
 	// reallocate the buffer if necessary
 	_textLen = (short)wcslen(unicode);
-    if (_textLen >= _textBufferLen)
+	if (_textLen >= _textBufferLen)
 	{
-		short newBufferLen = (short)(_textLen + 1);
-		wchar_t *pNewText = new wchar_t[newBufferLen];
 		delete [] _utext;
-		_utext = pNewText;
-		_textBufferLen = newBufferLen;
+		_textBufferLen = (short)(_textLen + 1);
+		_utext = new wchar_t[_textBufferLen];
 	}
 
 	m_LineBreaks.RemoveAll();
