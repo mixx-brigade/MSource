@@ -46,7 +46,4 @@
 // The PROTOCOL_VERSION when replay shipped to public
 #define PROTOCOL_VERSION_REPLAY		16
 
-// The PROTOCOL_VERSION for ReSource 1 (Prevents stock source/other source from joining)
-#define PROTOCOL_VERSION_RESOURCE1  25
-
 #endif

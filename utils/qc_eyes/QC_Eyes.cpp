@@ -8,7 +8,6 @@
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
-#warning "qc_eyes is being built in DEBUG! DO NOT push this binary to prod bin!"
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif

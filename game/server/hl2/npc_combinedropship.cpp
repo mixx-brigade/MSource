@@ -84,6 +84,9 @@ enum DROP_STATES
 
 enum CRATE_TYPES 
 {
+#ifdef SDK2013CE
+	CRATE_JALOPY = -4,
+#endif // SDK2013CE
 	CRATE_JEEP = -3,
 	CRATE_APC = -2,
 	CRATE_STRIDER = -1,
@@ -389,8 +392,10 @@ void	CNPC_CombineDropship::PopulatePoseParameters( void )
 		m_poseBody_Sway			= LookupPoseParameter( "body_sway" );
 		m_poseCargo_Body_Accel  = LookupPoseParameter( "cargo_body_accel" );
 		m_poseCargo_Body_Sway   = LookupPoseParameter( "cargo_body_sway" );
-		m_poseWeapon_Pitch		= LookupPoseParameter( "weapon_pitch" );
-		m_poseWeapon_Yaw		= LookupPoseParameter( "weapon_yaw" );
+#ifndef SDK2013CE
+		m_poseWeapon_Pitch		= LookupPoseParameter("weapon_pitch");
+		m_poseWeapon_Yaw		= LookupPoseParameter("weapon_yaw");
+#endif
 
 		m_sbStaticPoseParamsLoaded = true;
 	}
@@ -968,6 +973,31 @@ void CNPC_CombineDropship::Spawn( void )
 		}
 		break;
 
+#ifdef SDK2013CE
+	case CRATE_JALOPY:
+		m_hContainer = (CBaseAnimating*)CreateEntityByName( "prop_dynamic_override" );
+		if (m_hContainer)
+		{
+			m_hContainer->SetModel( "models/vehicle.mdl" );
+			m_hContainer->SetName( AllocPooledString( "dropship_jalopy" ) );
+
+			m_hContainer->SetAbsOrigin( GetAbsOrigin() );//- Vector( 0, 0 , 25 ) );
+			QAngle angles = GetAbsAngles();
+			VMatrix mat, rot, result;
+			MatrixFromAngles( angles, mat );
+			MatrixBuildRotateZ( rot, -90 );
+			MatrixMultiply( mat, rot, result );
+			MatrixToAngles( result, angles );
+			m_hContainer->SetAbsAngles( angles );
+
+			m_hContainer->SetParent(this, 0);
+			m_hContainer->SetOwnerEntity(this);
+			m_hContainer->SetSolid( SOLID_VPHYSICS );
+			m_hContainer->Spawn();
+		}
+		break;
+#endif // SDK2013CE
+
 	case CRATE_NONE:
 	default:
 		break;
@@ -1103,6 +1133,12 @@ void CNPC_CombineDropship::Precache( void )
 	case CRATE_JEEP:
 		PrecacheModel("models/buggy.mdl");
 		break;
+
+#ifdef SDK2013CE
+	case CRATE_JALOPY:
+		PrecacheModel("models/vehicle.mdl");
+		break;
+#endif // SDK2013CE
 
 	default:
 		break;
@@ -2795,6 +2831,11 @@ void CNPC_CombineDropship::UpdateContainerGunFacing( Vector &vecMuzzle, Vector &
 {
 	Assert( m_hContainer );
 
+#ifdef SDK2013CE
+	m_poseWeapon_Pitch = m_hContainer->LookupPoseParameter("weapon_pitch");
+	m_poseWeapon_Yaw = m_hContainer->LookupPoseParameter("weapon_yaw");
+#endif
+
 	// Get the desired aim vector
 	vecToTarget = GetEnemy()->WorldSpaceCenter( );
 
@@ -2999,6 +3040,5 @@ AI_BEGIN_CUSTOM_NPC( npc_combinedropship, CNPC_CombineDropship )
 	DECLARE_ACTIVITY( ACT_DROPSHIP_FLY_IDLE_CARGO );
 
 AI_END_CUSTOM_NPC()
-
 
 

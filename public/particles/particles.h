@@ -154,6 +154,7 @@ enum ParticleFunctionType_t
 
 struct CParticleVisibilityInputs
 {
+	float	m_flCameraBias;
 	float	m_flInputMin;
 	float	m_flInputMax;
 	float	m_flAlphaScaleMin;
@@ -720,6 +721,13 @@ public:
 		return false;
 	}
 
+	// Does this operator require that particles remain in the order they were emitted?
+	// WRD here, killed it with fire
+	//virtual bool RequiresOrderInvariance( void ) const
+	//{
+	//	return false;
+	//}
+
 	// Called when the SFM wants to skip forward in time
 	virtual void SkipToTime( float flTime, CParticleCollection *pParticles, void *pContext ) const {}
 
@@ -882,6 +890,7 @@ private:
 	DMXELEMENT_UNPACK_FIELD( "Visibility Alpha Scale maximum","1", float, VisibilityInputs.m_flAlphaScaleMax )		\
 	DMXELEMENT_UNPACK_FIELD( "Visibility Radius Scale minimum","1", float, VisibilityInputs.m_flRadiusScaleMin )		\
 	DMXELEMENT_UNPACK_FIELD( "Visibility Radius Scale maximum","1", float, VisibilityInputs.m_flRadiusScaleMax )
+
 //	DMXELEMENT_UNPACK_FIELD( "Visibility Use Bounding Box for Proxy", "0", bool, VisibilityInputs.m_bUseBBox )		
 //	DMXELEMENT_UNPACK_FIELD( "Visibility Bounding Box Scale", "1.0", float, VisibilityInputs.m_flBBoxScale )		
 
@@ -1062,7 +1071,7 @@ public:
 	float *GetInitialFloatAttributePtrForWrite( int nAttribute, int nParticleNumber );
 	fltx4 *GetInitialM128AttributePtrForWrite( int nAttribute, size_t *pStrideOut );
 
-	void Simulate( float dt );
+	void Simulate(float dt);
 	void SkipToTime( float t );
 
 	// the camera objetc may be compared for equality against control point objects
@@ -1094,13 +1103,14 @@ public:
 
 	// Used to retrieve the position of a control point
 	// somewhere between m_fCurTime and m_fCurTime - m_fPreviousDT
-	void GetControlPointAtTime( int nControlPoint, float flTime, Vector *pControlPoint );
-	void GetControlPointAtPrevTime( int nControlPoint, Vector *pControlPoint );
+	void GetControlPointAtTime(int nControlPoint, float flTime, Vector* pControlPoint);
+	void GetControlPointAtPrevTime(int nControlPoint, Vector* pControlPoint);
 	void GetControlPointOrientationAtTime( int nControlPoint, float flTime, Vector *pForward, Vector *pRight, Vector *pUp );
 	void GetControlPointTransformAtTime( int nControlPoint, float flTime, matrix3x4_t *pMat );
 	void GetControlPointTransformAtTime( int nControlPoint, float flTime, VMatrix *pMat );
 	void GetControlPointTransformAtTime( int nControlPoint, float flTime, CParticleSIMDTransformation *pXForm );
 	int GetHighestControlPoint( void ) const;
+
 
 	// Control point accessed:
 	// NOTE: Unlike the definition's version of these methods,
@@ -1805,9 +1815,9 @@ inline fltx4 *CParticleCollection::GetM128AttributePtrForWrite( int nAttribute, 
 {
 	// NOTE: If you hit this assertion, it means your particle operator isn't returning
 	// the appropriate fields in the RequiredAttributesMask call
-	Assert( !m_bIsRunningInitializers || ( m_nPerParticleInitializedAttributeMask & (1 << nAttribute) ) );
-	Assert( !m_bIsRunningOperators || ( m_nPerParticleUpdatedAttributeMask & (1 << nAttribute) ) );
-	Assert( m_nParticleFloatStrides[nAttribute] != 0 );
+	Assert(!m_bIsRunningInitializers || (m_nPerParticleInitializedAttributeMask & (1 << nAttribute)));
+	Assert(!m_bIsRunningOperators || (m_nPerParticleUpdatedAttributeMask & (1 << nAttribute)));
+	Assert(m_nParticleFloatStrides[nAttribute] != 0);
 
 	*(pStrideOut) = m_nParticleFloatStrides[ nAttribute ]/4;
 	return reinterpret_cast<fltx4 *>( m_pParticleAttributes[ nAttribute ] );

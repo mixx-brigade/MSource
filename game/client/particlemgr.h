@@ -119,11 +119,16 @@ entities. Each one is useful under different conditions.
 #include "tier0/fasttimer.h"
 #include "utllinkedlist.h"
 #include "utldict.h"
+#ifdef SDK2013CE
+#include <typeinfo>
+#else
 #ifdef WIN32
 #include <typeinfo.h>
 #else
 #include <typeinfo>
 #endif
+#endif // SDK2013CE
+
 #include "tier1/utlintrusivelist.h"
 #include "tier1/utlstring.h"
 
@@ -232,8 +237,8 @@ public:
 #ifdef _DEBUG
 	char *m_szDebugName;
 #endif
-	
-	IMaterial *m_pMaterial;
+
+	IMaterial* m_pMaterial;
 };
 
 
@@ -714,10 +719,10 @@ private:
 	int ComputeParticleDefScreenArea( int nInfoCount, RetireInfo_t *pInfo, float *pTotalArea, CParticleSystemDefinition* pDef, 
 		const CViewSetup& view, const VMatrix &worldToPixels, float flFocalDist );
 
-	bool RetireParticleCollections( CParticleSystemDefinition* pDef, int nCount, RetireInfo_t *pInfo, float flScreenArea, float flMaxTotalArea );
-	void BuildParticleSimList( CUtlVector< CNewParticleEffect* > &list );
-	bool EarlyRetireParticleSystems( int nCount, CNewParticleEffect **ppEffects );
-	static int RetireSort( const void *p1, const void *p2 ); 
+	bool RetireParticleCollections(CParticleSystemDefinition* pDef, int nCount, RetireInfo_t* pInfo, float flScreenArea, float flMaxTotalArea);
+	void BuildParticleSimList(CUtlVector< CNewParticleEffect* >& list);
+	bool EarlyRetireParticleSystems(int nCount, CNewParticleEffect** ppEffects);
+	static int RetireSort(const void* p1, const void* p2);
 
 private:
 

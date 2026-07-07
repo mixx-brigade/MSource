@@ -933,8 +933,8 @@ static void CalcVirtualAnimation( virtualmodel_t *pVModel, const CStudioHdr *pSt
 	{
 		if (pStudioHdr->boneFlags(i) & boneMask)
 		{
-			int j = pSeqGroup->boneMap[i];
-			if (j >= 0 && pweight[j] > 0.0f)
+			int l = pSeqGroup->boneMap[i];
+			if (l >= 0 && pweight[l] > 0.0f)
 			{
 				if (animdesc.flags & STUDIO_DELTA)
 				{
@@ -943,13 +943,13 @@ static void CalcVirtualAnimation( virtualmodel_t *pVModel, const CStudioHdr *pSt
 				}
 				else if (pSeqLinearBones)
 				{
-					q[i] = pSeqLinearBones->quat(j);
-					pos[i] = pSeqLinearBones->pos(j);
+					q[i] = pSeqLinearBones->quat(l);
+					pos[i] = pSeqLinearBones->pos(l);
 				}
 				else 
 				{
-					q[i] = pSeqbone[j].quat;
-					pos[i] = pSeqbone[j].pos;
+					q[i] = pSeqbone[l].quat;
+					pos[i] = pSeqbone[l].pos;
 				}
 #ifdef STUDIO_ENABLE_PERF_COUNTERS
 				pStudioHdr->m_nPerfUsedBones++;
@@ -997,10 +997,9 @@ static void CalcVirtualAnimation( virtualmodel_t *pVModel, const CStudioHdr *pSt
 		matrix3x4_t *boneToWorld = g_MatrixPool.Alloc();
 		CBoneBitList boneComputed;
 
-		int i;
-		for (i = 0; i < animdesc.numlocalhierarchy; i++)
+		for (int l = 0; l < animdesc.numlocalhierarchy; l++)
 		{
-			mstudiolocalhierarchy_t *pHierarchy = animdesc.pHierarchy( i );
+			mstudiolocalhierarchy_t* pHierarchy = animdesc.pHierarchy(l);
 
 			if ( !pHierarchy )
 				break;
@@ -1141,10 +1140,9 @@ static void CalcAnimation( const CStudioHdr *pStudioHdr,	Vector *pos, Quaternion
 		matrix3x4_t *boneToWorld = g_MatrixPool.Alloc();
 		CBoneBitList boneComputed;
 
-		int i;
-		for (i = 0; i < animdesc.numlocalhierarchy; i++)
+		for (int j = 0; j < animdesc.numlocalhierarchy; j++)
 		{
-			mstudiolocalhierarchy_t *pHierarchy = animdesc.pHierarchy( i );
+			mstudiolocalhierarchy_t* pHierarchy = animdesc.pHierarchy(j);
 
 			if ( !pHierarchy )
 				break;
@@ -2625,14 +2623,14 @@ public:
          X[i] = P[i];
       normalize(X);
 
-// Its y axis is perpendicular to P, so Y = unit( E - X(E·X) ).
+// Its y axis is perpendicular to P, so Y = unit( E - X(Eï¿½X) ).
 
       float dDOTx = dot(D,X);
       for (i = 0 ; i < 3 ; i++)
          Y[i] = D[i] - dDOTx * X[i];
       normalize(Y);
 
-// Its z axis is perpendicular to both X and Y, so Z = X×Y.
+// Its z axis is perpendicular to both X and Y, so Z = Xï¿½Y.
 
       cross(X,Y,Z);
 
@@ -5610,9 +5608,9 @@ bool Studio_AnimPosition( mstudioanimdesc_t *panim, float flCycle, Vector &vecPo
 			vecAngle.y = vecAngle.y * (1 - f) + pmove->angle * f;
 			if (iLoops != 0)
 			{
-				mstudiomovement_t *pmove = panim->pMovement( panim->nummovements - 1 );
-				vecPos = vecPos + iLoops * pmove->position; 
-				vecAngle.y = vecAngle.y + iLoops * pmove->angle; 
+				mstudiomovement_t* pmoveLocl = panim->pMovement(panim->nummovements - 1);
+				vecPos = vecPos + iLoops * pmoveLocl->position;
+				vecAngle.y = vecAngle.y + iLoops * pmoveLocl->angle;
 			}
 			return true;
 		}
@@ -5926,6 +5924,15 @@ const char *Studio_GetDefaultSurfaceProps( CStudioHdr *pstudiohdr )
 
 float Studio_GetMass( CStudioHdr *pstudiohdr )
 {
+	#ifdef SDK2013CE
+
+	if ( pstudiohdr == NULL )
+	{
+		return 0.f;
+	}
+
+	#endif
+
 	return pstudiohdr->mass();
 }
 
